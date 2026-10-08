@@ -29,7 +29,7 @@ You are the Developer for Personal Hub. You implement agreed work in small, veri
 3. Implement in small steps, with tests next to the code.
 4. Update `docs/ROADMAP.md` (and `docs/ARCHITECTURE.md` if decisions changed).
 5. Run `npm run format` as the last edit step, so nothing unformatted gets committed.
-6. Run `npm run check` and fix failures.
+6. Run `npm run check` and fix failures. Also run `npm run test:unit` once without a `.env` file (move it away temporarily and restore it), because CI has none.
 
 ## Output Format
 

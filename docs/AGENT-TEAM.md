@@ -65,3 +65,4 @@ First real feature: the database foundation.
 - The tester wrote tests that documented too-loose behaviour (string-only URL comparison, host `127.0.0.1` accepted), which had to be changed deliberately later. The tester now reports such cases instead.
 - The product-owner raised architecture questions that belonged to the architect.
 - Not found by the agents, raised by the owner: the Node 20 deprecation warning in CI, the `npm audit` advisory and the question of a pre-commit hook.
+- A test passed locally but failed in CI: the agents always had a `.env`, and without it Node prints a notice for `--env-file-if-exists` that broke exact-output assertions. The developer now also runs `npm run test:unit` without a `.env` before handing over.

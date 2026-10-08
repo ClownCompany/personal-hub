@@ -52,6 +52,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Recorded the CI `.env` learning in `docs/AGENT-TEAM.md` and added a matching developer step
 - 2026-10-08: Fixed the `db-migrate-down` tests failing in CI without a `.env` (no `--env-file-if-exists` flag in the spawned script)
 - 2026-10-08: Added the users and sessions migration with strict DB checks and integration tests, plus a guarded `db:migrate:down` and a shared `db-url-rules` module
 - 2026-10-08: Recorded the users and sessions schema decisions (uuidv7 ids, lowercase email and username, hashed session tokens) and the argon2id decision; synced open decisions

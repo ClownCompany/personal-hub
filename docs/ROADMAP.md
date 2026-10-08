@@ -13,12 +13,13 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 ## Next
 
 1. Try the agent team on the first real feature and record learnings in `docs/AGENT-TEAM.md`; adjust the agents where needed
-2. Docker Compose with PostgreSQL, `pg` and `node-pg-migrate`; integration tests against a test database
-3. First migration (`users`, `sessions`)
-4. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
-5. Hub shell: layout, sidebar navigation, dashboard
-6. Modules in order: notes, planner, images, vault
-7. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
+2. CI with GitHub Actions running `npm run check` on every push and pull request (status badge in the README); optional pre-commit hook for `check`
+3. Docker Compose with PostgreSQL, `pg` and `node-pg-migrate`; integration tests against a test database (add a PostgreSQL service to CI)
+4. First migration (`users`, `sessions`)
+5. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
+6. Hub shell: layout, sidebar navigation, dashboard
+7. Modules in order: notes, planner, images, vault
+8. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
 
 ## Open decisions
 
@@ -31,6 +32,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Made the `/continue` prompt agent-aware and confirmation-first; added CI to the roadmap
 - 2026-10-08: Added the agent team (5 custom agents with handoffs) and `docs/AGENT-TEAM.md`
 - 2026-10-08: Added basic test setup (Vitest, Zod, `typecheck`/`test`/`check` scripts, `.env.example`) and the agent team step to the roadmap
 - 2026-10-08: Defined agent workflow, conventions, security and testing rules in `AGENTS.md`; removed the entry limit for this list

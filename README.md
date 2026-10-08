@@ -30,4 +30,4 @@ Open this folder (`personal-hub`) as the VS Code workspace, start a new chat and
 
 It is defined in [.github/prompts/continue.prompt.md](.github/prompts/continue.prompt.md) and expands to:
 
-> Read `AGENTS.md`, `docs/ARCHITECTURE.md` and `docs/ROADMAP.md`. Summarise the current state briefly and continue with the next step of the roadmap.
+> Read `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md` and `docs/AGENT-TEAM.md`. Summarise the current state, name the next roadmap step, recommend which agent should handle it and ask for confirmation before starting.

@@ -14,7 +14,10 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 ## Next
 
 1. Try the agent team on the first real feature and record learnings in `docs/AGENT-TEAM.md`; adjust the agents where needed
-2. Docker Compose with PostgreSQL, `pg` and `node-pg-migrate`; integration tests against a test database (add a PostgreSQL service to CI)
+2. Database foundation, split into three parts:
+   - 2a: PostgreSQL in Docker Compose for development, `.env` handling
+   - 2b: `pg` pool helper, `node-pg-migrate` scripts
+   - 2c: integration-test harness against a separate test database, PostgreSQL service in CI
 3. First migration (`users`, `sessions`)
 4. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
 5. Hub shell: layout, sidebar navigation, dashboard
@@ -23,6 +26,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 ## Open decisions
 
+- Database foundation: test DB setup, test isolation, PostgreSQL version, credentials handling, CI service (with the architect)
 - Auth details: `argon2` vs `bcrypt`, session lifetime, rate limiting
 - Image storage adapter details
 - Vault key derivation (PBKDF2 vs Argon2)
@@ -32,6 +36,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Recorded the database foundation decisions (test DB, isolation, Compose, migrations, CI) in `docs/ARCHITECTURE.md` and split roadmap step 2 into 2a/2b/2c
 - 2026-10-08: Documented the format check in the `check` scope and made the developer agent run `npm run format` before handover
 - 2026-10-08: Ignored TypeScript major updates in Dependabot (typescript-eslint does not support TS 7 yet)
 - 2026-10-08: CI hardening: concurrency, action SHA pinning, checkout without persisted credentials, job timeout, Dependabot for actions and npm

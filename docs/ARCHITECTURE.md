@@ -47,6 +47,42 @@ Consequences:
 - The public demo resets its data on a schedule and applies rate limits and upload size limits.
 - The same demo user can be seeded locally to present the app without exposing real data.
 
+## Database foundation
+
+Status: Decided (roadmap step 2). Open points are listed under "Open decisions".
+
+### Local PostgreSQL (2a)
+
+- One PostgreSQL instance with two databases: `personal_hub` (development) and `personal_hub_test` (integration tests).
+- Only PostgreSQL is containerised during development; the app runs on the host. The `Dockerfile` and the app service belong to step 7.
+- The development file is `docker-compose.dev.yml`. `docker-compose.yml` is reserved for the self-hosting setup in step 7 (required secrets, no weak defaults). npm scripts wrap `-f docker-compose.dev.yml`.
+- Image `postgres:18` (Debian variant, floating minor); the data volume is mounted at `/var/lib/postgresql`.
+- Development credentials come from `.env` via `${VAR:-default}`; the port is bound to `127.0.0.1` and overridable with `POSTGRES_PORT`.
+- `.env` stays plain `KEY=value`. `.env.example` states that `DATABASE_URL` duplicates the Compose user, password and port.
+- The migration CLI loads `.env` via `node --env-file-if-exists=.env`; there is no `dotenv` dependency.
+
+### Pool and migrations (2b)
+
+- The pool is a lazy singleton stored on `globalThis` and configured through `getEnv()`. There is no top-level pool, so `next build` needs no environment variables. An `end()`/reset hook is exposed for tests.
+- Migrations live in `db/migrations`, one `.sql` file per migration with `-- Up Migration` and `-- Down Migration` markers. Shared options are in a JSON config file.
+- Scripts: `db:migrate`, `db:migrate:down`, `db:migrate:create`, plus `db:up` and `db:down` for the Compose file.
+
+### Integration tests (2c)
+
+- `TEST_DATABASE_URL` has its own test-only Zod schema, not part of the app `envSchema`.
+- Guards: the URL differs from `DATABASE_URL` and the database name ends in `_test`. Error messages never echo URLs.
+- The integration setup injects the test URL into `process.env.DATABASE_URL`, so app code stays unchanged.
+- Migrations run once in Vitest `globalSetup` through the `node-pg-migrate` `runner()` API with an explicit URL. `globalSetup` also creates the test database if it is missing.
+- Before each test, all tables except `pgmigrations` are cleared with `TRUNCATE ... RESTART IDENTITY CASCADE`. Integration files run serially.
+- Upgrade path if the suite gets slow: one database per test file (template database).
+- Integration tests run in the default `npm test` through two Vitest projects, `unit` and `integration`. Integration files are named `*.integration.test.ts` and sit next to the code.
+- If the database is unreachable, `globalSetup` fails loudly with a hint (`npm run db:up`); it never skips silently.
+
+### CI
+
+- GitHub Actions uses `services: postgres` with a `pg_isready` health check, on the same major version as Compose. A comment in `ci.yml` points to the Compose tag.
+- `npm run build` stays in a step without database variables.
+
 ## Folder structure
 
 ```
@@ -152,3 +188,7 @@ Every table carries `userId` and is always queried by it.
 ## Open decisions
 
 - Auth details: password hashing library (`argon2` vs `bcrypt`), session lifetime, rate limiting.
+- Separate E2E database `personal_hub_e2e` for Playwright (decide in step 4).
+- Least-privilege database roles: separate roles for migrations and the app.
+- SSL mode for the hosted demo database (decide in step 7).
+- Whether Dependabot should also cover the `docker-compose` ecosystem.

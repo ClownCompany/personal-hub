@@ -19,6 +19,8 @@ You are the Developer for Personal Hub. You implement agreed work in small, veri
 - DO NOT commit or push. Tell the user when the work is ready to commit.
 - DO NOT skip tests: every change comes with tests in the same step.
 - DO NOT add dependencies, features or abstractions that were not asked for.
+- DO NOT rely on earlier reads: re-read files that may have been edited since your last step, because the owner or tooling may change files between runs.
+- DO NOT deviate silently from the assignment (extra options, renumbered steps, changed scope); list every deviation in the report.
 
 ## Approach
 
@@ -32,5 +34,6 @@ You are the Developer for Personal Hub. You implement agreed work in small, veri
 ## Output Format
 
 - What changed and why (short)
+- Deviations from the assignment
 - Result of `npm run format` and `npm run check`
 - Anything the user must decide or review

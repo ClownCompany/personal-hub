@@ -10,25 +10,25 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 - Basic setup: `typecheck`, `test`, `check` scripts, Vitest, Zod, `.env.example`, env validation with a first test
 - Agent team (product-owner, architect, developer, security-reviewer, tester) in `.github/agents/` with handoffs, documented in `docs/AGENT-TEAM.md`
 - CI with GitHub Actions (`.github/workflows/ci.yml`): `npm run check` and `npm run build` on Node 24 LTS (`.nvmrc`), README status badge
-- Step 2a: PostgreSQL 18 in `docker-compose.dev.yml` (`db:up`, `db:down`), `POSTGRES_*` variables in `.env.example`, README section
-- Step 2b: lazy `pg` pool singleton (`src/lib/db.ts`) with tests, `node-pg-migrate` scripts (`db:migrate`, `db:migrate:down`, `db:migrate:create`) and config in `db/node-pg-migrate.json`
-- Step 2c: integration-test harness (Vitest projects `unit` and `integration`, `globalSetup` creates and migrates `personal_hub_test`, tables truncated before each test, guarded `TEST_DATABASE_URL`) and a PostgreSQL service in CI; database foundation (step 2) complete
+- Database foundation, part a: PostgreSQL 18 in `docker-compose.dev.yml` (`db:up`, `db:down`), `POSTGRES_*` variables in `.env.example`, README section
+- Database foundation, part b: lazy `pg` pool singleton (`src/lib/db.ts`) with tests, `node-pg-migrate` scripts (`db:migrate`, `db:migrate:down`, `db:migrate:create`) and config in `db/node-pg-migrate.json`
+- Database foundation, part c: integration-test harness (Vitest projects `unit` and `integration`, `globalSetup` creates and migrates `personal_hub_test`, tables truncated before each test, guarded `TEST_DATABASE_URL`) and a PostgreSQL service in CI; database foundation complete
+- Agent team: first real feature built with it (database foundation); learnings in `docs/AGENT-TEAM.md`, agents adjusted
 
 ## Next
 
-1. Try the agent team on the first real feature and record learnings in `docs/AGENT-TEAM.md`; adjust the agents where needed
-2. First migration (`users`, `sessions`)
-3. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
-4. Hub shell: layout, sidebar navigation, dashboard
-5. Modules in order: notes, planner, images, vault
-6. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
+1. First migration (`users`, `sessions`)
+2. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
+3. Hub shell: layout, sidebar navigation, dashboard
+4. Modules in order: notes, planner, images, vault
+5. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
 
 ## Open decisions
 
 - Auth details: `argon2` vs `bcrypt`, session lifetime, rate limiting
-- Separate E2E database `personal_hub_e2e` for Playwright (decide in step 3)
+- Separate E2E database `personal_hub_e2e` for Playwright (decide with the auth step)
 - Least-privilege database roles: separate roles for migrations and the app
-- SSL mode for the hosted demo database (decide in step 6)
+- SSL mode for the hosted demo database (decide with the demo deployment)
 - Whether Dependabot should also cover the `docker-compose` ecosystem
 - Image storage adapter details
 - Vault key derivation (PBKDF2 vs Argon2)
@@ -42,11 +42,12 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
-- 2026-10-08: Added the integration-test harness (Vitest projects, test database with strict guards, truncate per test) and a PostgreSQL service in CI (step 2c)
+- 2026-10-08: Recorded the agent team learnings, adjusted the developer, tester and product-owner agents and renamed numbered steps in the docs to topic names
+- 2026-10-08: Added the integration-test harness (Vitest projects, test database with strict guards, truncate per test) and a PostgreSQL service in CI (database foundation, part c)
 - 2026-10-08: Accepted the dev-only `braces` advisory (no patch available) and decided against a CI audit step
-- 2026-10-08: Added the lazy `pg` pool (`src/lib/db.ts`) and `node-pg-migrate` setup with `db:migrate*` scripts (step 2b)
-- 2026-10-08: Added local PostgreSQL via `docker-compose.dev.yml` with `db:up`/`db:down` scripts and `.env.example` variables (step 2a)
-- 2026-10-08: Recorded the database foundation decisions (test DB, isolation, Compose, migrations, CI) in `docs/ARCHITECTURE.md` and split roadmap step 2 into 2a/2b/2c
+- 2026-10-08: Added the lazy `pg` pool (`src/lib/db.ts`) and `node-pg-migrate` setup with `db:migrate*` scripts (database foundation, part b)
+- 2026-10-08: Added local PostgreSQL via `docker-compose.dev.yml` with `db:up`/`db:down` scripts and `.env.example` variables (database foundation, part a)
+- 2026-10-08: Recorded the database foundation decisions (test DB, isolation, Compose, migrations, CI) in `docs/ARCHITECTURE.md` and split the database foundation step into parts a, b and c
 - 2026-10-08: Documented the format check in the `check` scope and made the developer agent run `npm run format` before handover
 - 2026-10-08: Ignored TypeScript major updates in Dependabot (typescript-eslint does not support TS 7 yet)
 - 2026-10-08: CI hardening: concurrency, action SHA pinning, checkout without persisted credentials, job timeout, Dependabot for actions and npm

@@ -49,25 +49,25 @@ Consequences:
 
 ## Database foundation
 
-Status: Decided (roadmap step 2). Open points are listed under "Open decisions".
+Status: Decided (database foundation). Open points are listed under "Open decisions".
 
-### Local PostgreSQL (2a)
+### Local PostgreSQL (part a)
 
 - One PostgreSQL instance with two databases: `personal_hub` (development) and `personal_hub_test` (integration tests).
-- Only PostgreSQL is containerised during development; the app runs on the host. The `Dockerfile` and the app service belong to step 6.
-- The development file is `docker-compose.dev.yml`. `docker-compose.yml` is reserved for the self-hosting setup in step 6 (required secrets, no weak defaults). npm scripts wrap `-f docker-compose.dev.yml`.
+- Only PostgreSQL is containerised during development; the app runs on the host. The `Dockerfile` and the app service belong to the demo deployment step.
+- The development file is `docker-compose.dev.yml`. `docker-compose.yml` is reserved for the self-hosting setup in the demo deployment step (required secrets, no weak defaults). npm scripts wrap `-f docker-compose.dev.yml`.
 - Image `postgres:18` (Debian variant, floating minor); the data volume is mounted at `/var/lib/postgresql`.
 - Development credentials come from `.env` via `${VAR:-default}`; the port is bound to `127.0.0.1` and overridable with `POSTGRES_PORT`.
 - `.env` stays plain `KEY=value`. `.env.example` states that `DATABASE_URL` duplicates the Compose user, password and port.
 - The migration CLI loads `.env` via `node --env-file-if-exists=.env`; there is no `dotenv` dependency.
 
-### Pool and migrations (2b)
+### Pool and migrations (part b)
 
 - The pool is a lazy singleton stored on `globalThis` and configured through `getEnv()`. There is no top-level pool, so `next build` needs no environment variables. An `end()`/reset hook is exposed for tests.
 - Migrations live in `db/migrations`, one `.sql` file per migration with `-- Up Migration` and `-- Down Migration` markers. Shared options are in a JSON config file.
 - Scripts: `db:migrate`, `db:migrate:down`, `db:migrate:create`, plus `db:up` and `db:down` for the Compose file.
 
-### Integration tests (2c)
+### Integration tests (part c)
 
 - `TEST_DATABASE_URL` has its own test-only Zod schema, not part of the app `envSchema`.
 - Guards: the URL differs from `DATABASE_URL`, the database name ends in `_test`, and error messages never echo URLs. Decided extension (security review):
@@ -199,7 +199,7 @@ Every table carries `userId` and is always queried by it.
 ## Open decisions
 
 - Auth details: password hashing library (`argon2` vs `bcrypt`), session lifetime, rate limiting.
-- Separate E2E database `personal_hub_e2e` for Playwright (decide in step 3).
+- Separate E2E database `personal_hub_e2e` for Playwright (decide with the auth step).
 - Least-privilege database roles: separate roles for migrations and the app.
-- SSL mode for the hosted demo database (decide in step 6).
+- SSL mode for the hosted demo database (decide with the demo deployment).
 - Whether Dependabot should also cover the `docker-compose` ecosystem.

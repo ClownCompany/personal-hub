@@ -27,6 +27,8 @@ flowchart LR
 
 Agents are connected with **handoffs**: after a response, a button switches to the next agent with a pre-filled prompt. The human stays in control of every step and is the only one who commits and pushes.
 
+For security-sensitive changes (auth, sessions, SQL, secrets, vault, guards) the `security-reviewer` runs before or together with the `tester`, so the tester does not build tests on unsafe behaviour.
+
 Orchestration (an agent delegating to the others as subagents) is deliberately not used yet. It may be added later once the manual workflow is well understood.
 
 ## Design principles
@@ -47,4 +49,19 @@ Typical feature: `product-owner` writes the story, `architect` clears open decis
 
 ## Learnings
 
-To be filled in while using the team on real features: what worked, what needed adjusting, and examples of useful reviews.
+First real feature: the database foundation.
+
+### What worked
+
+- The `product-owner` -> `architect` chain: the story arrived with questions and recommendations. The architect verified facts on the web (PostgreSQL 18 image volume path `/var/lib/postgresql`, node-pg-migrate 9 specifics) and disagreed with the product-owner on 3 of 13 points. The owner answered all decisions in one message ("all as recommended").
+- The `security-reviewer` found real weaknesses in the test-database guards that neither developer nor tester had noticed: query parameters like `?host=` redirecting the connection, no host restriction, and `TRUNCATE` without checking the connected database. A second pass found only low findings.
+- Splitting the story into three parts (a, b, c) with manual Docker verification and one commit each kept steps small.
+
+### What needed adjusting
+
+- The main chat silently skipped agents (architect, tester, security-reviewer) for a small task. Result: the rule in `AGENTS.md` that the chain is proposed and confirmed.
+- `format:check` turned `check` red, so the developer now runs `npm run format` before handing over.
+- The owner edited files between agent runs, so agents must re-read current contents before editing.
+- The tester wrote tests that documented too-loose behaviour (string-only URL comparison, host `127.0.0.1` accepted), which had to be changed deliberately later. The tester now reports such cases instead.
+- The product-owner raised architecture questions that belonged to the architect.
+- Not found by the agents, raised by the owner: the Node 20 deprecation warning in CI, the `npm audit` advisory and the question of a pre-commit hook.

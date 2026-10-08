@@ -32,6 +32,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: CI hardening: concurrency, action SHA pinning, checkout without persisted credentials, job timeout, Dependabot for actions and npm
 - 2026-10-08: Review cleanup: scaffold leftovers removed, stricter env validation with lazy getEnv and credential-leak test, ES2022 target, Prettier added
 - 2026-10-08: Bumped the CI actions to v7 (Node 24 runtime)
 - 2026-10-08: Documented that the agent chain per task is proposed and confirmed by the owner

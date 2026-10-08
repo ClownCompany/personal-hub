@@ -18,20 +18,33 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 ## Next
 
 1. First migration (`users`, `sessions`)
+   - Scope: one migration file with `uuidv7()` ids; schema as decided in "Users and sessions schema" in `docs/ARCHITECTURE.md`
+   - `users`: lowercase unique `email` and `username` (username up to 32 characters, no `@`)
+   - `sessions`: SHA-256 token hash as `bytea`, `expires_at`, cascade on user delete
+   - Integration tests for the constraints; no data inserted
+   - Deliberately NOT included: demo-user flag and vault salt (see steps 4 and 5)
 2. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
+   - Login accepts email or username, distinguished by `@`; usernames may not contain `@`
 3. Hub shell: layout, sidebar navigation, dashboard
 4. Modules in order: notes, planner, images, vault
+   - Vault: add the vault salt column on `users` (migration)
 5. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
+   - Demo account: add the demo-user flag on `users` (migration)
+   - The hosted demo database must run PostgreSQL 18 or newer, because the id default is `uuidv7()`
 
 ## Open decisions
 
-- Auth details: `argon2` vs `bcrypt`, session lifetime, rate limiting
+- Auth details (`argon2id` is decided; session token format and storage are decided):
+  - Node library for `argon2id` and its parameters (memory, iterations, parallelism)
+  - Session lifetime
+  - Rate limiting
+- Email normalisation for non-ASCII characters (JavaScript `toLowerCase()` vs PostgreSQL `lower()`; decide with the auth story)
 - Separate E2E database `personal_hub_e2e` for Playwright (decide with the auth step)
 - Least-privilege database roles: separate roles for migrations and the app
 - SSL mode for the hosted demo database (decide with the demo deployment)
 - Whether Dependabot should also cover the `docker-compose` ecosystem
 - Image storage adapter details
-- Vault key derivation (PBKDF2 vs Argon2)
+- Vault key derivation (Proposed: Argon2id via WASM with PBKDF2 fallback; open: parameters, bundle size, automatic or opt-in fallback)
 - Agent team: orchestration with subagents instead of manual handoffs (deferred, maybe later)
 
 ## Known risks
@@ -42,6 +55,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Recorded the users and sessions schema decisions (uuidv7 ids, lowercase email and username, hashed session tokens) and the argon2id decision; synced open decisions
 - 2026-10-08: Recorded the agent team learnings, adjusted the developer, tester and product-owner agents and renamed numbered steps in the docs to topic names
 - 2026-10-08: Added the integration-test harness (Vitest projects, test database with strict guards, truncate per test) and a PostgreSQL service in CI (database foundation, part c)
 - 2026-10-08: Accepted the dev-only `braces` advisory (no patch available) and decided against a CI audit step

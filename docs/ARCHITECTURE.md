@@ -12,11 +12,11 @@ Each feature (notes, planner, images, vault) is an isolated module behind a shar
 | Database               | PostgreSQL (runs locally in Docker, self-hosted, and in the cloud)                                                                                     | Decided                    |
 | ORM                    | None for now; plain SQL with a PostgreSQL driver                                                                                                       | Decided                    |
 | DB driver / migrations | `pg` + `node-pg-migrate` (SQL migration files)                                                                                                         | Decided                    |
-| Auth                   | Custom: Argon2 password hashes, DB sessions, HttpOnly cookie                                                                                           | Decided                    |
+| Auth                   | Custom: argon2id password hashes, DB sessions, HttpOnly cookie                                                                                         | Decided                    |
 | Mutations              | Server Actions (REST only where needed, e.g. image upload/serving)                                                                                     | Decided                    |
 | Validation             | Zod at every boundary                                                                                                                                  | Decided                    |
 | Image storage          | Storage adapter, metadata in DB                                                                                                                        | Proposed                   |
-| Vault                  | Client-side encryption (Web Crypto)                                                                                                                    | Proposed                   |
+| Vault                  | Client-side encryption (Web Crypto); key derivation Argon2id via WASM, PBKDF2 fallback                                                                 | Proposed                   |
 | Tests                  | Vitest (unit, integration against a real test database), Playwright (few end-to-end flows, added with the first UI flows); test files next to the code | Decided                    |
 | UI language            | English                                                                                                                                                | Decided                    |
 
@@ -35,6 +35,7 @@ One codebase, three ways to run it. All differences are configured through envir
 Consequences:
 
 - PostgreSQL everywhere; SQLite is not used because serverless hosting has no persistent file system.
+- The hosted demo database must run PostgreSQL 18 or newer (`uuidv7()`, see "Users and sessions schema"); otherwise the id default falls back to `gen_random_uuid()`.
 - Image storage goes through a storage adapter: local volume (development, private) or object storage (public demo).
 - The app ships a `Dockerfile` and `docker-compose.yml` for the private mode.
 - Secrets and connection strings live in `.env`; `.env.example` documents all variables.
@@ -163,7 +164,7 @@ flowchart LR
 ```
 
 - Reads happen in Server Components via `queries.ts`; writes go through `actions.ts`.
-- Every action and query verifies the session and filters by `userId`.
+- Every action and query verifies the session and filters by `user_id`.
 
 ## Access control
 
@@ -174,17 +175,65 @@ flowchart LR
 ## Data model (rough)
 
 ```
-User ─┬─< Note          (title, content, tags)
-      ├─< PlannerEntry  (title, start, end, recurrence)
-      ├─< Image         (filename, storageKey, mime, size, album)
-      └─< VaultItem     (encryptedBlob, iv)      User.vaultSalt
+users ─┬─< notes            (title, content, tags)
+       ├─< planner_entries  (title, start, end, recurrence)
+       ├─< images           (filename, storage_key, mime, size, album)
+       └─< vault_items      (encrypted_blob, iv)      users.vault_salt
 ```
 
-Every table carries `userId` and is always queried by it.
+The database uses `snake_case` for tables and columns; the sketch is rough and only `users` and `sessions` are fixed (see below). Every module table carries `user_id` and is always queried by it.
+
+## Users and sessions schema
+
+Status: Decided (first migration: `users`, `sessions`).
+
+### Conventions
+
+- Names: `snake_case`, plural table names, `id`, `user_id`, `created_at timestamptz not null default now()`.
+- Ids: `uuid` with default `uuidv7()` (native in PostgreSQL 18, see "Deployment"). Tests never assert concrete ids. Every later table references `users.id` as `uuid`.
+- Constraint and index names are explicit and PostgreSQL-style: `<table>_pkey`, `<table>_<column>_key`, `<table>_<column>_fkey`, `<table>_<column>_idx`, `<table>_<column>_<rule>_check`.
+- No PostgreSQL extensions (no `citext`, no `pg_cron`).
+- One migration file `<utc>_create-users-and-sessions.sql`. Down drops `sessions`, then `users`, without `CASCADE`. No `CONCURRENTLY`.
+- Not part of this migration: the demo flag (`is_demo`, demo account step) and `vault_salt` (vault step); both arrive as later migrations.
+
+### `users`
+
+- Columns: `id uuid` primary key (`users_pkey`), `email text not null`, `username text not null`, `password_hash text not null`, `created_at`.
+- Usernames (Decided, supersedes the earlier casing-preserving rule): stored lowercase, like `email`, and at most 32 characters. The app lowercases input with a Zod transform before every query and insert, so users may type uppercase letters in the form and at login; the stored value and everything shown later is lowercase. The database enforces this with `CHECK (username = lower(username))` (`users_username_lower_check`) and plain `UNIQUE` on `username` (`users_username_key`). Case-insensitive uniqueness ('Alice' versus 'alice') follows from the lowercase invariant. No `citext`, no extension, no `lower()` index. The generated `username_key` column was rejected because the owner does not want an extra column.
+- Usernames are ASCII after normalisation (`[a-z0-9._-]`, enforced in Zod), so `lower()` is an identity on every valid stored value in any locale and the lowercase check cannot reject what the app produces.
+- Email works the same way: the app lowercases it (Zod transform) before every query and insert, and the database enforces `CHECK (email = lower(email))` plus plain `UNIQUE` (`users_email_key`). Non-ASCII email normalisation is an open item (see "Open decisions").
+- DB-side format rules are invariants only, so a username can never equal an email and the `@` split at login is unambiguous:
+  - `username`: lowercase (`users_username_lower_check`), no `@` (`users_username_no_at_check`), 1 to 32 characters, which also means non-empty (`users_username_length_check`).
+  - `email`: lowercase (`users_email_lower_check`), contains `@` (`users_email_has_at_check`), non-empty and at most 254 characters (`users_email_length_check`).
+  - Everything else stays in Zod: full email format, username character set `[a-z0-9._-]` (after lowercasing), minimum username length, reserved names.
+- Lookups (auth story): by username with `username = lower($1)`, by email with `email = lower($1)`; both stay parameterised.
+- Unique violations (`23505`) are mapped through `error.constraint`: `users_username_key` to the username field, `users_email_key` to the email field.
+- `password_hash`: non-empty CHECK (`users_password_hash_not_empty_check`). No length cap and no `$argon2id$` prefix check, which keeps the schema independent of the hashing library.
+- No `updated_at` for now. Trigger versus application code is decided once, when `notes` (the first table that needs it) arrives.
+
+### `sessions`
+
+- Token: 32 random bytes from `crypto.randomBytes`, base64url in the HttpOnly cookie. The database stores only `SHA-256(token)`. argon2 is deliberately not used for high-entropy tokens; HMAC with a server secret was rejected for now.
+- Columns: `id uuid` primary key (`sessions_pkey`), `user_id uuid not null references users(id) on delete cascade` (`sessions_user_id_fkey`), `token_hash bytea not null`, `created_at`, `expires_at timestamptz not null`.
+- `token_hash` is separate from `id`, with `CHECK (octet_length(token_hash) = 32)` (`sessions_token_hash_length_check`) and `UNIQUE` (`sessions_token_hash_key`).
+- Expiry: only `created_at` and `expires_at`, with `CHECK (expires_at > created_at)` (`sessions_expires_at_check`). Auth checks `expires_at > now()` in SQL, using the database clock. A nullable `last_used_at` can be added later by migration.
+- Indexes: unique `token_hash`, plus `sessions_user_id_idx` and `sessions_expires_at_idx`.
+- Cleanup: the migration only adds the `expires_at` index. Expired sessions are deleted in the auth story (on login and logout) and in the demo reset; no `pg_cron`.
+- No session metadata (no user agent, no IP).
+
+### Consequences
+
+- The auth story lowercases email and username in Zod before every query and insert; lookups use `username = lower($1)` and `email = lower($1)`. Unique violations (`23505`, `error.constraint`) are mapped to field errors as listed under "`users`".
+- Tests for the first migration: inserting 'alice' and then 'Alice' directly fails with `users_username_lower_check`; the app path normalises 'Alice' to 'alice', which collides with 'alice' and fails with `23505` and `error.constraint = 'users_username_key'`; a username with `@`, an empty one and one longer than 32 characters are rejected by `users_username_no_at_check` and `users_username_length_check`; uppercase letters in a username or an email are rejected by `users_username_lower_check` and `users_email_lower_check`.
+- Roadmap impact: the users-and-sessions migration and its integration tests use the schema above (no `username_key` column, lowercase check on `username`); the auth story's Zod schemas lowercase the username and accept `[a-z0-9._-]`, 32 characters at most.
+- Later module tables get `user_id uuid not null references users(id) on delete cascade` plus a `user_id` index.
+- Stored files of images and the vault do not cascade: the app deletes them on account deletion. The demo reset can be `delete from users`.
 
 ## Vault
 
-- A separate master password derives the encryption key in the browser (PBKDF2 or Argon2 + AES-GCM). It is never sent to the server.
+- A separate master password derives the encryption key in the browser and encrypts with AES-GCM. It is never sent to the server.
+- Key derivation (Proposed, decided when the vault step comes up): Argon2id in the browser, which needs WASM (for example `hash-wasm`) because Web Crypto has no Argon2, with PBKDF2 (high iteration count) via Web Crypto as fallback when WASM is unavailable.
+  - Open: Argon2id and PBKDF2 parameters, bundle size of the WASM library, and whether the fallback is automatic or opt-in.
 - The vault is locked by default, unlocked only in client memory, and locks again on leaving the page or after a timeout.
 - The server only stores ciphertext, IV and salt.
 - Treat it as a portfolio demo until reviewed; do not store real credentials.
@@ -196,9 +245,19 @@ Every table carries `userId` and is always queried by it.
 - Secrets live in `.env`, never in the repository.
 - Dependency audit: Decided. CI has no `npm audit` step. The `braces` advisory (CVE-2026-93687, no patched version yet) reaches us only through the dev dependency chain `eslint-config-next` → `fast-glob` → `micromatch`; `npm audit --omit=dev` reports 0. It is accepted until `braces` is patched; Dependabot reports updates. Do not use `npm audit fix --force`, which would downgrade `eslint-config-next` to 14.
 
+## Auth: password hashing
+
+Status: Decided. Passwords are hashed with `argon2id`, not `bcrypt`: it is the first OWASP recommendation and has no 72-byte input limit. Hash values are never logged or returned.
+
 ## Open decisions
 
-- Auth details: password hashing library (`argon2` vs `bcrypt`), session lifetime, rate limiting.
+- Auth details (options are prepared by the architect with the auth story):
+  - Node library for `argon2id`: native `argon2`, `@node-rs/argon2` or WASM such as `hash-wasm`. Consider Docker self-hosting, the hosted demo platform and Next.js `serverExternalPackages`.
+  - `argon2id` parameters (memory, iterations, parallelism).
+  - Session lifetime (token format and storage are decided, see "Users and sessions schema").
+  - Rate limiting.
+  - Email normalisation for non-ASCII characters: JavaScript `toLowerCase()` and PostgreSQL `lower()` can differ, in which case `users_email_lower_check` rejects the insert.
+- Vault key derivation (Proposed, see "Vault"): parameters, bundle size, automatic or opt-in PBKDF2 fallback.
 - Separate E2E database `personal_hub_e2e` for Playwright (decide with the auth step).
 - Least-privilege database roles: separate roles for migrations and the app.
 - SSL mode for the hosted demo database (decide with the demo deployment).

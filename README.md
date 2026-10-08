@@ -40,6 +40,8 @@ npm run db:migrate:down                # revert the last migration
 npm run db:migrate:create -- add-notes # create a new migration file
 ```
 
+`db:migrate:down` is guarded: it refuses unless `DATABASE_URL` points to a local host and the database is `personal_hub` or ends in `_test`, and it accepts only a migration count and `--dry-run`.
+
 ## Run the tests
 
 ```bash

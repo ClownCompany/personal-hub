@@ -14,21 +14,17 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 - Database foundation, part b: lazy `pg` pool singleton (`src/lib/db.ts`) with tests, `node-pg-migrate` scripts (`db:migrate`, `db:migrate:down`, `db:migrate:create`) and config in `db/node-pg-migrate.json`
 - Database foundation, part c: integration-test harness (Vitest projects `unit` and `integration`, `globalSetup` creates and migrates `personal_hub_test`, tables truncated before each test, guarded `TEST_DATABASE_URL`) and a PostgreSQL service in CI; database foundation complete
 - Agent team: first real feature built with it (database foundation); learnings in `docs/AGENT-TEAM.md`, agents adjusted
+- First migration `db/migrations/*_create-users-and-sessions.sql` (`users`, `sessions` as decided in "Users and sessions schema", including the charset and `argon2id` prefix checks from the security review) with integration tests in `src/lib/users-and-sessions.integration.test.ts`; no demo flag or vault salt yet
+- Guard for `db:migrate:down` (`scripts/db-migrate-down.mjs`): local host and `personal_hub` or `*_test` only, with unit tests
 
 ## Next
 
-1. First migration (`users`, `sessions`)
-   - Scope: one migration file with `uuidv7()` ids; schema as decided in "Users and sessions schema" in `docs/ARCHITECTURE.md`
-   - `users`: lowercase unique `email` and `username` (username up to 32 characters, no `@`)
-   - `sessions`: SHA-256 token hash as `bytea`, `expires_at`, cascade on user delete
-   - Integration tests for the constraints; no data inserted
-   - Deliberately NOT included: demo-user flag and vault salt (see steps 4 and 5)
-2. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
+1. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
    - Login accepts email or username, distinguished by `@`; usernames may not contain `@`
-3. Hub shell: layout, sidebar navigation, dashboard
-4. Modules in order: notes, planner, images, vault
+2. Hub shell: layout, sidebar navigation, dashboard
+3. Modules in order: notes, planner, images, vault
    - Vault: add the vault salt column on `users` (migration)
-5. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
+4. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
    - Demo account: add the demo-user flag on `users` (migration)
    - The hosted demo database must run PostgreSQL 18 or newer, because the id default is `uuidv7()`
 
@@ -36,11 +32,11 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 - Auth details (`argon2id` is decided; session token format and storage are decided):
   - Node library for `argon2id` and its parameters (memory, iterations, parallelism)
-  - Session lifetime
+  - Session lifetime and idle timeout
   - Rate limiting
-- Email normalisation for non-ASCII characters (JavaScript `toLowerCase()` vs PostgreSQL `lower()`; decide with the auth story)
+  - Cookie attributes, login error handling and the other proposals in "Auth story: proposals" in `docs/ARCHITECTURE.md`
 - Separate E2E database `personal_hub_e2e` for Playwright (decide with the auth step)
-- Least-privilege database roles: separate roles for migrations and the app
+- Least-privilege database roles: separate roles for migrations and the app, to be decided before the self-hosting and demo step
 - SSL mode for the hosted demo database (decide with the demo deployment)
 - Whether Dependabot should also cover the `docker-compose` ecosystem
 - Image storage adapter details
@@ -50,11 +46,13 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 ## Known risks
 
 - `npm audit` reports 5 high findings, all from one dev-only chain (`eslint-config-next` → `braces`, CVE-2026-93687, no patch available). Accepted; revisit when `braces` is patched. See "Security principles" in `docs/ARCHITECTURE.md`.
+- Accepted by the owner: the database checks let `.` and `..` usernames, `a@b@c` emails and a bare `$argon2id$` hash through, because reserved names and the full formats are validated by Zod in the auth story. The `db:migrate:down` and `TEST_DATABASE_URL` guards stay strict on purpose and refuse uppercase hosts, `127.1`, `localhost.` and `[::ffff:127.0.0.1]`.
 
 ## Recent activity
 
 Newest first.
 
+- 2026-10-08: Added the users and sessions migration with strict DB checks and integration tests, plus a guarded `db:migrate:down` and a shared `db-url-rules` module
 - 2026-10-08: Recorded the users and sessions schema decisions (uuidv7 ids, lowercase email and username, hashed session tokens) and the argon2id decision; synced open decisions
 - 2026-10-08: Recorded the agent team learnings, adjusted the developer, tester and product-owner agents and renamed numbered steps in the docs to topic names
 - 2026-10-08: Added the integration-test harness (Vitest projects, test database with strict guards, truncate per test) and a PostgreSQL service in CI (database foundation, part c)

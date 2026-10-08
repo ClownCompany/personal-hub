@@ -9,8 +9,16 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
-          exclude: [...configDefaults.exclude, "src/**/*.integration.test.ts"],
+          include: [
+            "src/**/*.test.ts",
+            "src/**/*.test.tsx",
+            "scripts/**/*.test.ts",
+          ],
+          exclude: [
+            ...configDefaults.exclude,
+            "src/**/*.integration.test.ts",
+            "scripts/**/*.integration.test.ts",
+          ],
         },
       },
       {
@@ -18,7 +26,10 @@ export default defineConfig({
         test: {
           name: "integration",
           environment: "node",
-          include: ["src/**/*.integration.test.ts"],
+          include: [
+            "src/**/*.integration.test.ts",
+            "scripts/**/*.integration.test.ts",
+          ],
           globalSetup: ["src/lib/test/global-setup.ts"],
           setupFiles: ["src/lib/test/setup-integration.ts"],
           fileParallelism: false,

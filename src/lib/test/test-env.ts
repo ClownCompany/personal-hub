@@ -1,33 +1,22 @@
 import { z } from "zod";
+import {
+  getRawDatabaseName,
+  hasExplicitPort,
+  hasExplicitUser,
+  hasOnlyAllowedQuery,
+  hasPostgresScheme,
+  INVALID_ESCAPE,
+  isTestDatabaseName,
+  LOCAL_HOSTS,
+  MAX_NAME_BYTES,
+  parseUrl,
+  UNSAFE_CHARACTERS,
+} from "../db-url-rules.mjs";
 
-const NAME_PATTERN = /^[A-Za-z0-9_]+_test$/;
-const MAX_NAME_BYTES = 63;
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
-// pg-connection-string turns every other query parameter into a driver option (host, port, user, ...).
-const SSL_MODES = new Set([
-  "disable",
-  "prefer",
-  "require",
-  "verify-ca",
-  "verify-full",
-  "no-verify",
-]);
+export { isTestDatabaseName };
+
 // Only used for DATABASE_URL, which may omit the port; TEST_DATABASE_URL must state it.
 const DEFAULT_PORT = "5432";
-// The driver re-encodes the whole URL when it sees a `%` that is not a valid escape.
-const INVALID_ESCAPE = /%(?![0-9A-Fa-f]{2})/;
-
-function parseUrl(value: string): URL | null {
-  try {
-    return new URL(value);
-  } catch {
-    return null;
-  }
-}
-
-export function isTestDatabaseName(name: string): boolean {
-  return NAME_PATTERN.test(name) && Buffer.byteLength(name) <= MAX_NAME_BYTES;
-}
 
 // Host, port and database as the driver would resolve them; local hosts count as one server.
 function connectionTarget(url: URL): string {
@@ -57,28 +46,15 @@ function isSameDatabase(testUrl: string, databaseUrl: string): boolean {
   return connectionTarget(test) === connectionTarget(database);
 }
 
-function hasOnlyAllowedQuery(url: URL): boolean {
-  // Valid sslmode values never need escapes.
-  if (url.search.includes("%")) return false;
-  for (const [key, value] of url.searchParams) {
-    if (key !== "sslmode" || !SSL_MODES.has(value)) return false;
-  }
-  return true;
-}
-
 // Test-only; kept out of the app envSchema. Messages must never echo a URL.
 const testEnvSchema = z
   .object({
     TEST_DATABASE_URL: z
       .string({ error: "TEST_DATABASE_URL is required (see .env.example)" })
       .min(1, "TEST_DATABASE_URL is required (see .env.example)")
+      .refine(hasPostgresScheme, "TEST_DATABASE_URL must be a postgres:// URL")
       .refine(
-        (value) =>
-          value.startsWith("postgres://") || value.startsWith("postgresql://"),
-        "TEST_DATABASE_URL must be a postgres:// URL",
-      )
-      .refine(
-        (value) => !/[\s\u0000-\u001f\u007f]/.test(value),
+        (value) => !UNSAFE_CHARACTERS.test(value),
         "TEST_DATABASE_URL must not contain whitespace or control characters",
       ),
     DATABASE_URL: z.string().optional(),
@@ -106,12 +82,12 @@ const testEnvSchema = z
     }
     if (url === null) return;
     // An empty port or user would silently fall back to PGPORT/PGUSER in the driver.
-    if (url.port === "") {
+    if (!hasExplicitPort(url)) {
       issue(
         "TEST_DATABASE_URL must include an explicit port (PG* environment variables are not supported)",
       );
     }
-    if (url.username === "") {
+    if (!hasExplicitUser(url)) {
       issue(
         "TEST_DATABASE_URL must include a user name (PG* environment variables are not supported)",
       );
@@ -121,7 +97,7 @@ const testEnvSchema = z
         "TEST_DATABASE_URL must use a local host (localhost, 127.0.0.1 or [::1])",
       );
     }
-    if (env.TEST_DATABASE_URL.includes("#") || !hasOnlyAllowedQuery(url)) {
+    if (!hasOnlyAllowedQuery(env.TEST_DATABASE_URL, url)) {
       issue(
         "TEST_DATABASE_URL must not contain a fragment or query parameters other than a plain sslmode (valid value, no percent-escapes)",
       );
@@ -132,9 +108,8 @@ const testEnvSchema = z
 // so the validated name is exactly the one the driver connects to.
 export function getDatabaseName(url: string): string | null {
   const parsed = parseUrl(url);
-  if (parsed === null || parsed.pathname.includes("%")) return null;
-  const name = parsed.pathname.slice(1);
-  return isTestDatabaseName(name) ? name : null;
+  const name = parsed === null ? null : getRawDatabaseName(parsed);
+  return name !== null && isTestDatabaseName(name) ? name : null;
 }
 
 // Same server, maintenance database; used to check reachability and create the test DB.

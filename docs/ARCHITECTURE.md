@@ -67,6 +67,10 @@ Status: Decided (database foundation). Open points are listed under "Open decisi
 - The pool is a lazy singleton stored on `globalThis` and configured through `getEnv()`. There is no top-level pool, so `next build` needs no environment variables. An `end()`/reset hook is exposed for tests.
 - Migrations live in `db/migrations`, one `.sql` file per migration with `-- Up Migration` and `-- Down Migration` markers. Shared options are in a JSON config file.
 - Scripts: `db:migrate`, `db:migrate:down`, `db:migrate:create`, plus `db:up` and `db:down` for the Compose file.
+- Guard for the destructive down migration (Decided, security review):
+  - `npm run db:migrate:down` refuses to run unless `DATABASE_URL` points to a local host (`localhost`, `127.0.0.1`, `[::1]`) and the database name is `personal_hub` or ends in `_test`. Otherwise it exits with a static message that does not echo the URL or credentials. There is no override flag. Like the `TEST_DATABASE_URL` guard, it also requires an explicit user name and port, because an empty user or port would fall back to `PGUSER` or `PGPORT`.
+  - It is a small Node script (location chosen by the developer, for example `scripts/db-migrate-down.mjs`) that loads `DATABASE_URL` like the other db scripts (`.env`, existing environment variables win), validates it and then calls the `node-pg-migrate` CLI. `db:migrate` (up) and `db:migrate:create` stay unchanged.
+  - Limitation: a private-mode database named `personal_hub` that is reachable on localhost is not protected. Deployment steps use their own tooling.
 
 ### Integration tests (part c)
 
@@ -200,15 +204,16 @@ Status: Decided (first migration: `users`, `sessions`).
 
 - Columns: `id uuid` primary key (`users_pkey`), `email text not null`, `username text not null`, `password_hash text not null`, `created_at`.
 - Usernames (Decided, supersedes the earlier casing-preserving rule): stored lowercase, like `email`, and at most 32 characters. The app lowercases input with a Zod transform before every query and insert, so users may type uppercase letters in the form and at login; the stored value and everything shown later is lowercase. The database enforces this with `CHECK (username = lower(username))` (`users_username_lower_check`) and plain `UNIQUE` on `username` (`users_username_key`). Case-insensitive uniqueness ('Alice' versus 'alice') follows from the lowercase invariant. No `citext`, no extension, no `lower()` index. The generated `username_key` column was rejected because the owner does not want an extra column.
-- Usernames are ASCII after normalisation (`[a-z0-9._-]`, enforced in Zod), so `lower()` is an identity on every valid stored value in any locale and the lowercase check cannot reject what the app produces.
-- Email works the same way: the app lowercases it (Zod transform) before every query and insert, and the database enforces `CHECK (email = lower(email))` plus plain `UNIQUE` (`users_email_key`). Non-ASCII email normalisation is an open item (see "Open decisions").
-- DB-side format rules are invariants only, so a username can never equal an email and the `@` split at login is unambiguous:
-  - `username`: lowercase (`users_username_lower_check`), no `@` (`users_username_no_at_check`), 1 to 32 characters, which also means non-empty (`users_username_length_check`).
-  - `email`: lowercase (`users_email_lower_check`), contains `@` (`users_email_has_at_check`), non-empty and at most 254 characters (`users_email_length_check`).
-  - Everything else stays in Zod: full email format, username character set `[a-z0-9._-]` (after lowercasing), minimum username length, reserved names.
-- Lookups (auth story): by username with `username = lower($1)`, by email with `email = lower($1)`; both stay parameterised.
+- Usernames are ASCII (`[a-z0-9._-]`), and the database now guarantees it (`users_username_charset_check`, Decided, security review). `lower()` is therefore an identity on every valid stored value in any locale, and the lowercase check cannot reject what the app produces. The charset check also rejects zero-width characters and homoglyphs (for example Cyrillic letters) that would otherwise create look-alike usernames.
+- Email works the same way: the app lowercases it (Zod transform) before every query and insert, and the database enforces `CHECK (email = lower(email))` plus plain `UNIQUE` (`users_email_key`).
+- Email is printable ASCII without spaces (`users_email_charset_check`, Decided). Internationalised addresses are not supported; the domain is entered in punycode. Zod enforces the same rule. This resolves the former open item on non-ASCII email normalisation: for ASCII input, JavaScript `toLowerCase()` and PostgreSQL `lower()` agree in every locale, so `users_email_lower_check` cannot reject what the app produces.
+- DB-side format rules are invariants, so a username can never equal an email and the `@` split at login is unambiguous. The character classes use explicit ASCII ranges, which are locale-independent:
+  - `username`: lowercase (`users_username_lower_check`), no `@` (`users_username_no_at_check`), 1 to 32 characters, which also means non-empty (`users_username_length_check`), and `[a-z0-9._-]` only (`users_username_charset_check`). The lowercase and no-`@` checks are redundant with the charset check but stay, and are tested.
+  - `email`: lowercase (`users_email_lower_check`), contains `@` (`users_email_has_at_check`), non-empty and at most 254 characters (`users_email_length_check`), printable ASCII without spaces (`users_email_charset_check`).
+  - Everything else stays in Zod: full email format, minimum username length, reserved names, and the same charset rules as the database (for readable form errors).
+- Lookups (auth story): by username with `username = $1`, by email with `email = $1`. The value is the Zod-normalised one (one normaliser, in one place); there is no `lower($1)` on raw input. Both stay parameterised.
 - Unique violations (`23505`) are mapped through `error.constraint`: `users_username_key` to the username field, `users_email_key` to the email field.
-- `password_hash`: non-empty CHECK (`users_password_hash_not_empty_check`). No length cap and no `$argon2id$` prefix check, which keeps the schema independent of the hashing library.
+- `password_hash`: `CHECK (password_hash like '$argon2id$%')` (`users_password_hash_prefix_check`, Decided, replaces the earlier decision of no prefix check) and the non-empty CHECK (`users_password_hash_not_empty_check`), which is redundant with the prefix check but stays and is tested. Reason: `argon2id` is Decided and every library emits the PHC prefix; changing the algorithm later is a migration. No length cap.
 - No `updated_at` for now. Trigger versus application code is decided once, when `notes` (the first table that needs it) arrives.
 
 ### `sessions`
@@ -223,9 +228,11 @@ Status: Decided (first migration: `users`, `sessions`).
 
 ### Consequences
 
-- The auth story lowercases email and username in Zod before every query and insert; lookups use `username = lower($1)` and `email = lower($1)`. Unique violations (`23505`, `error.constraint`) are mapped to field errors as listed under "`users`".
+- The auth story normalises email and username in Zod before every query and insert; lookups use `username = $1` and `email = $1` with the normalised value. Unique violations (`23505`, `error.constraint`) are mapped to field errors as listed under "`users`".
 - Tests for the first migration: inserting 'alice' and then 'Alice' directly fails with `users_username_lower_check`; the app path normalises 'Alice' to 'alice', which collides with 'alice' and fails with `23505` and `error.constraint = 'users_username_key'`; a username with `@`, an empty one and one longer than 32 characters are rejected by `users_username_no_at_check` and `users_username_length_check`; uppercase letters in a username or an email are rejected by `users_username_lower_check` and `users_email_lower_check`.
-- Roadmap impact: the users-and-sessions migration and its integration tests use the schema above (no `username_key` column, lowercase check on `username`); the auth story's Zod schemas lowercase the username and accept `[a-z0-9._-]`, 32 characters at most.
+- Tests for the charset and hash checks: a username with a zero-width character or a Cyrillic homoglyph is rejected by `users_username_charset_check`; an email with non-ASCII, whitespace or control characters is rejected by `users_email_charset_check`; a `password_hash` without the `$argon2id$` prefix is rejected by `users_password_hash_prefix_check`, an empty one by `users_password_hash_not_empty_check`.
+- Test for the guard script: `db:migrate:down` refuses a non-local host and a database name other than `personal_hub` or `*_test`, prints a static message without the URL or credentials, and does not call the migration CLI; it passes for a local `personal_hub_test` URL.
+- Roadmap impact: the users-and-sessions migration (new checks `users_username_charset_check`, `users_email_charset_check`, `users_password_hash_prefix_check`), its integration tests and the guard script with its test are added to the migration work. The auth story's Zod schemas normalise the username and email, accept `[a-z0-9._-]` (32 characters at most) and printable ASCII without spaces respectively, and cap the plaintext password length (see "Auth: password hashing").
 - Later module tables get `user_id uuid not null references users(id) on delete cascade` plus a `user_id` index.
 - Stored files of images and the vault do not cascade: the app deletes them on account deletion. The demo reset can be `delete from users`.
 
@@ -243,22 +250,43 @@ Status: Decided (first migration: `users`, `sessions`).
 - Authorisation is enforced on the server, never only in the UI.
 - Uploads: validate type and size, never trust client file names.
 - Secrets live in `.env`, never in the repository.
+- Database error handling (Decided, security review): database errors are never logged or returned wholesale, because `error.detail` and `error.message` contain the failing row (including the password hash or token hash) and the server log would keep it. Only `code` and `constraint` are used, through one central mapper in `lib/db` (built in the auth story, with a unit test that a mapped error does not contain the hash).
 - Dependency audit: Decided. CI has no `npm audit` step. The `braces` advisory (CVE-2026-93687, no patched version yet) reaches us only through the dev dependency chain `eslint-config-next` → `fast-glob` → `micromatch`; `npm audit --omit=dev` reports 0. It is accepted until `braces` is patched; Dependabot reports updates. Do not use `npm audit fix --force`, which would downgrade `eslint-config-next` to 14.
 
 ## Auth: password hashing
 
 Status: Decided. Passwords are hashed with `argon2id`, not `bcrypt`: it is the first OWASP recommendation and has no 72-byte input limit. Hash values are never logged or returned.
 
+Zod rule for the auth story (Decided): a maximum plaintext password length (for example 128 characters; the exact value is fixed in the auth story) protects against denial of service through very long inputs.
+
+## Auth story: proposals
+
+Status: Proposed / Open, none of these is Decided. They are discussed one by one with the auth story.
+
+- Session expiry:
+  - Compute `expires_at` in SQL with the database clock (`now() + interval`).
+  - Optional upper-bound CHECK on `expires_at` (for example 90 days after `created_at`).
+  - Open: idle timeout through `last_used_at`.
+- One helper `getSessionByTokenHash` that always joins `users` and filters `expires_at > now()`. Tests for expired sessions and for cleanup on login.
+- Auth-story test that the stored value equals `sha256(token)`.
+- Cookie: `Secure`, `SameSite`, `__Host-` prefix, `Max-Age` matching `expires_at`, a fresh token on every login, and all sessions revoked on password change.
+- Login and registration:
+  - Generic login error, plus a dummy-hash verification when the user is not found (timing).
+  - Open: how to handle the disclosure of "email already taken" at registration.
+  - Rate limiting on login and registration before the demo goes public.
+- Optional composite foreign keys for child resources of later modules: `unique (id, user_id)` on the parent so the child can reference `(parent_id, user_id)`.
+- Images and vault: on account deletion, delete the stored files first or record a deletion job, since files do not cascade.
+
 ## Open decisions
 
 - Auth details (options are prepared by the architect with the auth story):
   - Node library for `argon2id`: native `argon2`, `@node-rs/argon2` or WASM such as `hash-wasm`. Consider Docker self-hosting, the hosted demo platform and Next.js `serverExternalPackages`.
   - `argon2id` parameters (memory, iterations, parallelism).
-  - Session lifetime (token format and storage are decided, see "Users and sessions schema").
+  - Session lifetime and idle timeout (token format and storage are decided, see "Users and sessions schema"; options under "Auth story: proposals").
   - Rate limiting.
-  - Email normalisation for non-ASCII characters: JavaScript `toLowerCase()` and PostgreSQL `lower()` can differ, in which case `users_email_lower_check` rejects the insert.
+  - Cookie attributes, login error handling and the other proposals under "Auth story: proposals".
 - Vault key derivation (Proposed, see "Vault"): parameters, bundle size, automatic or opt-in PBKDF2 fallback.
 - Separate E2E database `personal_hub_e2e` for Playwright (decide with the auth step).
-- Least-privilege database roles: separate roles for migrations and the app.
+- Least-privilege database roles: separate roles for migrations and the app, to be decided before the self-hosting and demo step. Reason: the runtime role currently owns the tables, so it can alter or drop them.
 - SSL mode for the hosted demo database (decide with the demo deployment).
 - Whether Dependabot should also cover the `docker-compose` ecosystem.

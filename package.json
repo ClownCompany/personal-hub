@@ -17,7 +17,7 @@
     "db:up": "docker compose -f docker-compose.dev.yml up -d --wait",
     "db:down": "docker compose -f docker-compose.dev.yml down",
     "db:migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js -f db/node-pg-migrate.json up",
-    "db:migrate:down": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js -f db/node-pg-migrate.json down",
+    "db:migrate:down": "node --env-file-if-exists=.env scripts/db-migrate-down.mjs",
     "db:migrate:create": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js -f db/node-pg-migrate.json create",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run test"
   },

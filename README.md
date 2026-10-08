@@ -9,6 +9,7 @@ The project is also an experiment in AI-assisted development: working rules, dec
 - [AGENTS.md](AGENTS.md): rules for AI agents working on this repository
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): stack, structure and decisions
 - [docs/ROADMAP.md](docs/ROADMAP.md): current status and next steps
+- [docs/AGENT-TEAM.md](docs/AGENT-TEAM.md): the custom AI agent team and its workflow
 
 ## Getting started
 

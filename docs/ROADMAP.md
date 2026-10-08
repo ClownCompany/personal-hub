@@ -12,26 +12,23 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 - CI with GitHub Actions (`.github/workflows/ci.yml`): `npm run check` and `npm run build` on Node 24 LTS (`.nvmrc`), README status badge
 - Step 2a: PostgreSQL 18 in `docker-compose.dev.yml` (`db:up`, `db:down`), `POSTGRES_*` variables in `.env.example`, README section
 - Step 2b: lazy `pg` pool singleton (`src/lib/db.ts`) with tests, `node-pg-migrate` scripts (`db:migrate`, `db:migrate:down`, `db:migrate:create`) and config in `db/node-pg-migrate.json`
+- Step 2c: integration-test harness (Vitest projects `unit` and `integration`, `globalSetup` creates and migrates `personal_hub_test`, tables truncated before each test, guarded `TEST_DATABASE_URL`) and a PostgreSQL service in CI; database foundation (step 2) complete
 
 ## Next
 
 1. Try the agent team on the first real feature and record learnings in `docs/AGENT-TEAM.md`; adjust the agents where needed
-2. Database foundation, split into three parts:
-   - ~~2a: PostgreSQL in Docker Compose for development, `.env` handling~~ (done)
-   - ~~2b: `pg` pool helper, `node-pg-migrate` scripts~~ (done)
-   - 2c: integration-test harness against a separate test database, PostgreSQL service in CI
-3. First migration (`users`, `sessions`)
-4. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
-5. Hub shell: layout, sidebar navigation, dashboard
-6. Modules in order: notes, planner, images, vault
-7. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
+2. First migration (`users`, `sessions`)
+3. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
+4. Hub shell: layout, sidebar navigation, dashboard
+5. Modules in order: notes, planner, images, vault
+6. Demo account seed script, Dockerfile and `docker-compose.yml` for self-hosting, public demo deployment
 
 ## Open decisions
 
 - Auth details: `argon2` vs `bcrypt`, session lifetime, rate limiting
-- Separate E2E database `personal_hub_e2e` for Playwright (decide in step 4)
+- Separate E2E database `personal_hub_e2e` for Playwright (decide in step 3)
 - Least-privilege database roles: separate roles for migrations and the app
-- SSL mode for the hosted demo database (decide in step 7)
+- SSL mode for the hosted demo database (decide in step 6)
 - Whether Dependabot should also cover the `docker-compose` ecosystem
 - Image storage adapter details
 - Vault key derivation (PBKDF2 vs Argon2)
@@ -45,6 +42,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Added the integration-test harness (Vitest projects, test database with strict guards, truncate per test) and a PostgreSQL service in CI (step 2c)
 - 2026-10-08: Accepted the dev-only `braces` advisory (no patch available) and decided against a CI audit step
 - 2026-10-08: Added the lazy `pg` pool (`src/lib/db.ts`) and `node-pg-migrate` setup with `db:migrate*` scripts (step 2b)
 - 2026-10-08: Added local PostgreSQL via `docker-compose.dev.yml` with `db:up`/`db:down` scripts and `.env.example` variables (step 2a)

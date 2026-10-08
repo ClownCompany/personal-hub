@@ -40,6 +40,17 @@ npm run db:migrate:down                # revert the last migration
 npm run db:migrate:create -- add-notes # create a new migration file
 ```
 
+## Run the tests
+
+```bash
+npm run db:up           # integration tests need PostgreSQL
+npm test                # unit and integration tests
+npm run test:unit       # unit tests only, no database needed
+npm run test:integration
+```
+
+Integration tests (`*.integration.test.ts`) run against a separate database, `personal_hub_test`, on the same server. `TEST_DATABASE_URL` in `.env` points to it; it must differ from `DATABASE_URL`, use a local host (`localhost`, `127.0.0.1` or `[::1]`), include a user name and an explicit port (for example `localhost:5432`), have no query parameters except `sslmode`, and the database name must match `[A-Za-z0-9_]+_test`. `PG*` environment variables (`PGPORT`, `PGUSER`, ...) are not a supported way to configure the test connection. The database is created and migrated automatically, and all tables are cleared before each test. Without a running database the integration run fails with a hint instead of being skipped.
+
 ## Continuing with an AI chat
 
 Open this folder (`personal-hub`) as the VS Code workspace, start a new chat and run the saved prompt:

@@ -11,13 +11,14 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 - Agent team (product-owner, architect, developer, security-reviewer, tester) in `.github/agents/` with handoffs, documented in `docs/AGENT-TEAM.md`
 - CI with GitHub Actions (`.github/workflows/ci.yml`): `npm run check` and `npm run build` on Node 24 LTS (`.nvmrc`), README status badge
 - Step 2a: PostgreSQL 18 in `docker-compose.dev.yml` (`db:up`, `db:down`), `POSTGRES_*` variables in `.env.example`, README section
+- Step 2b: lazy `pg` pool singleton (`src/lib/db.ts`) with tests, `node-pg-migrate` scripts (`db:migrate`, `db:migrate:down`, `db:migrate:create`) and config in `db/node-pg-migrate.json`
 
 ## Next
 
 1. Try the agent team on the first real feature and record learnings in `docs/AGENT-TEAM.md`; adjust the agents where needed
 2. Database foundation, split into three parts:
    - ~~2a: PostgreSQL in Docker Compose for development, `.env` handling~~ (done)
-   - 2b: `pg` pool helper, `node-pg-migrate` scripts
+   - ~~2b: `pg` pool helper, `node-pg-migrate` scripts~~ (done)
    - 2c: integration-test harness against a separate test database, PostgreSQL service in CI
 3. First migration (`users`, `sessions`)
 4. Custom auth: register, login, logout, protected routes; Playwright for the first end-to-end flows
@@ -40,6 +41,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Added the lazy `pg` pool (`src/lib/db.ts`) and `node-pg-migrate` setup with `db:migrate*` scripts (step 2b)
 - 2026-10-08: Added local PostgreSQL via `docker-compose.dev.yml` with `db:up`/`db:down` scripts and `.env.example` variables (step 2a)
 - 2026-10-08: Recorded the database foundation decisions (test DB, isolation, Compose, migrations, CI) in `docs/ARCHITECTURE.md` and split roadmap step 2 into 2a/2b/2c
 - 2026-10-08: Documented the format check in the `check` scope and made the developer agent run `npm run format` before handover

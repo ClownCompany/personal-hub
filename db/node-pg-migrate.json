@@ -1,0 +1,5 @@
+{
+  "migrations-dir": "db/migrations",
+  "migration-file-language": "sql",
+  "migration-filename-format": "utc"
+}

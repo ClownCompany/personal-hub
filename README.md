@@ -32,6 +32,14 @@ npm run db:up          # start PostgreSQL and wait until it is healthy
 npm run db:down        # stop it; data stays in the Docker volume
 ```
 
+Migrations are single `.sql` files in `db/migrations` with `-- Up Migration` and `-- Down Migration` markers. The scripts read `DATABASE_URL` from `.env`; variables already set in the environment take precedence.
+
+```bash
+npm run db:migrate                     # apply all pending migrations
+npm run db:migrate:down                # revert the last migration
+npm run db:migrate:create -- add-notes # create a new migration file
+```
+
 ## Continuing with an AI chat
 
 Open this folder (`personal-hub`) as the VS Code workspace, start a new chat and run the saved prompt:

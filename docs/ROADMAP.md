@@ -32,6 +32,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Documented the format check in the `check` scope and made the developer agent run `npm run format` before handover
 - 2026-10-08: Ignored TypeScript major updates in Dependabot (typescript-eslint does not support TS 7 yet)
 - 2026-10-08: CI hardening: concurrency, action SHA pinning, checkout without persisted credentials, job timeout, Dependabot for actions and npm
 - 2026-10-08: Review cleanup: scaffold leftovers removed, stricter env validation with lazy getEnv and credential-leak test, ES2022 target, Prettier added

@@ -19,7 +19,8 @@ Personal Hub: a web app where a signed-in user manages notes, a weekly planner, 
 - `npm run build`: production build
 - `npm run typecheck`: TypeScript check
 - `npm test`: run all tests once (`npm run test:watch` for watch mode)
-- `npm run check`: lint, typecheck and tests in one go
+- `npm run check`: lint, format check, typecheck and tests in one go
+- `npm run format`: format all files with Prettier (`npm run format:check` only verifies)
 
 ## Workflow
 
@@ -54,7 +55,7 @@ Personal Hub: a web app where a signed-in user manages notes, a weekly planner, 
 
 ## Definition of done
 
-- `npm run check` passes (lint, typecheck, tests).
+- `npm run check` passes (lint, format check, typecheck, tests).
 - Tests exist for the new or changed code.
 - `docs/ROADMAP.md` and, if decisions changed, `docs/ARCHITECTURE.md` are updated.
 

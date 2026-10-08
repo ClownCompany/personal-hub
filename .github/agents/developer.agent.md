@@ -25,11 +25,12 @@ You are the Developer for Personal Hub. You implement agreed work in small, veri
 1. Read `docs/ARCHITECTURE.md`, `docs/ROADMAP.md` and the code you will touch. Read the Next.js docs in `node_modules/next/dist/docs/` before writing Next.js code.
 2. State a short plan for larger changes and track steps with the todo list.
 3. Implement in small steps, with tests next to the code.
-4. Run `npm run check` and fix failures.
-5. Update `docs/ROADMAP.md` (and `docs/ARCHITECTURE.md` if decisions changed).
+4. Update `docs/ROADMAP.md` (and `docs/ARCHITECTURE.md` if decisions changed).
+5. Run `npm run format` as the last edit step, so nothing unformatted gets committed.
+6. Run `npm run check` and fix failures.
 
 ## Output Format
 
 - What changed and why (short)
-- Result of `npm run check`
+- Result of `npm run format` and `npm run check`
 - Anything the user must decide or review

@@ -1,5 +1,7 @@
 # Personal Hub
 
+[![CI](https://github.com/ClownCompany/personal-hub/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ClownCompany/personal-hub/actions/workflows/ci.yml)
+
 A personal web hub built with Next.js, React and TypeScript, and part of my web developer portfolio. After signing in, a user gets notes, a weekly planner, image management and a password vault behind one navigation menu.
 
 The project is also an experiment in AI-assisted development: working rules, decisions and progress live in the repository so that any new AI chat session can pick up where the last one stopped.

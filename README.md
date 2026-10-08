@@ -22,6 +22,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Run the database locally
+
+Requires Docker. PostgreSQL runs in a container; the app runs on the host.
+
+```bash
+cp .env.example .env   # adjust values if needed
+npm run db:up          # start PostgreSQL and wait until it is healthy
+npm run db:down        # stop it; data stays in the Docker volume
+```
+
 ## Continuing with an AI chat
 
 Open this folder (`personal-hub`) as the VS Code workspace, start a new chat and run the saved prompt:

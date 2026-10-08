@@ -10,12 +10,13 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 - Basic setup: `typecheck`, `test`, `check` scripts, Vitest, Zod, `.env.example`, env validation with a first test
 - Agent team (product-owner, architect, developer, security-reviewer, tester) in `.github/agents/` with handoffs, documented in `docs/AGENT-TEAM.md`
 - CI with GitHub Actions (`.github/workflows/ci.yml`): `npm run check` and `npm run build` on Node 24 LTS (`.nvmrc`), README status badge
+- Step 2a: PostgreSQL 18 in `docker-compose.dev.yml` (`db:up`, `db:down`), `POSTGRES_*` variables in `.env.example`, README section
 
 ## Next
 
 1. Try the agent team on the first real feature and record learnings in `docs/AGENT-TEAM.md`; adjust the agents where needed
 2. Database foundation, split into three parts:
-   - 2a: PostgreSQL in Docker Compose for development, `.env` handling
+   - ~~2a: PostgreSQL in Docker Compose for development, `.env` handling~~ (done)
    - 2b: `pg` pool helper, `node-pg-migrate` scripts
    - 2c: integration-test harness against a separate test database, PostgreSQL service in CI
 3. First migration (`users`, `sessions`)
@@ -26,8 +27,11 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 ## Open decisions
 
-- Database foundation: test DB setup, test isolation, PostgreSQL version, credentials handling, CI service (with the architect)
 - Auth details: `argon2` vs `bcrypt`, session lifetime, rate limiting
+- Separate E2E database `personal_hub_e2e` for Playwright (decide in step 4)
+- Least-privilege database roles: separate roles for migrations and the app
+- SSL mode for the hosted demo database (decide in step 7)
+- Whether Dependabot should also cover the `docker-compose` ecosystem
 - Image storage adapter details
 - Vault key derivation (PBKDF2 vs Argon2)
 - Agent team: orchestration with subagents instead of manual handoffs (deferred, maybe later)
@@ -36,6 +40,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Added local PostgreSQL via `docker-compose.dev.yml` with `db:up`/`db:down` scripts and `.env.example` variables (step 2a)
 - 2026-10-08: Recorded the database foundation decisions (test DB, isolation, Compose, migrations, CI) in `docs/ARCHITECTURE.md` and split roadmap step 2 into 2a/2b/2c
 - 2026-10-08: Documented the format check in the `check` scope and made the developer agent run `npm run format` before handover
 - 2026-10-08: Ignored TypeScript major updates in Dependabot (typescript-eslint does not support TS 7 yet)

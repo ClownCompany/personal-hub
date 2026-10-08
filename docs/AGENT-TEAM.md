@@ -4,13 +4,13 @@ Personal Hub is built with a small team of custom AI agents in VS Code. Each age
 
 ## Roles
 
-| Agent | Purpose | Tools | Must not |
-|---|---|---|---|
-| `product-owner` | Turns ideas into user stories with acceptance criteria, maintains the roadmap | read, search, edit | change code or decide architecture |
-| `architect` | Prepares decisions with options and trade-offs, records confirmed decisions | read, search, edit, web | change code, decide alone |
-| `developer` | Implements in small steps with tests, runs `npm run check` | read, search, edit, execute, todo | commit or push |
-| `security-reviewer` | Reviews auth, sessions, SQL, secrets, vault | read, search | change any file, run commands |
-| `tester` | Finds missing test cases and writes tests | read, search, edit, execute | change production code |
+| Agent               | Purpose                                                                       | Tools                             | Must not                           |
+| ------------------- | ----------------------------------------------------------------------------- | --------------------------------- | ---------------------------------- |
+| `product-owner`     | Turns ideas into user stories with acceptance criteria, maintains the roadmap | read, search, edit                | change code or decide architecture |
+| `architect`         | Prepares decisions with options and trade-offs, records confirmed decisions   | read, search, edit, web           | change code, decide alone          |
+| `developer`         | Implements in small steps with tests, runs `npm run check`                    | read, search, edit, execute, todo | commit or push                     |
+| `security-reviewer` | Reviews auth, sessions, SQL, secrets, vault                                   | read, search                      | change any file, run commands      |
+| `tester`            | Finds missing test cases and writes tests                                     | read, search, edit, execute       | change production code             |
 
 ## Workflow
 

@@ -5,20 +5,20 @@ Each feature (notes, planner, images, vault) is an isolated module behind a shar
 
 ## Stack
 
-| Concern | Choice | Status |
-|---|---|---|
-| Framework | Next.js 16 (App Router), React 19, TypeScript | Decided |
-| Styling | Tailwind CSS 4 | Decided (scaffold default) |
-| Database | PostgreSQL (runs locally in Docker, self-hosted, and in the cloud) | Decided |
-| ORM | None for now; plain SQL with a PostgreSQL driver | Decided |
-| DB driver / migrations | `pg` + `node-pg-migrate` (SQL migration files) | Decided |
-| Auth | Custom: Argon2 password hashes, DB sessions, HttpOnly cookie | Decided |
-| Mutations | Server Actions (REST only where needed, e.g. image upload/serving) | Decided |
-| Validation | Zod at every boundary | Decided |
-| Image storage | Storage adapter, metadata in DB | Proposed |
-| Vault | Client-side encryption (Web Crypto) | Proposed |
-| Tests | Vitest (unit, integration against a real test database), Playwright (few end-to-end flows, added with the first UI flows); test files next to the code | Decided |
-| UI language | English | Decided |
+| Concern                | Choice                                                                                                                                                 | Status                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| Framework              | Next.js 16 (App Router), React 19, TypeScript                                                                                                          | Decided                    |
+| Styling                | Tailwind CSS 4                                                                                                                                         | Decided (scaffold default) |
+| Database               | PostgreSQL (runs locally in Docker, self-hosted, and in the cloud)                                                                                     | Decided                    |
+| ORM                    | None for now; plain SQL with a PostgreSQL driver                                                                                                       | Decided                    |
+| DB driver / migrations | `pg` + `node-pg-migrate` (SQL migration files)                                                                                                         | Decided                    |
+| Auth                   | Custom: Argon2 password hashes, DB sessions, HttpOnly cookie                                                                                           | Decided                    |
+| Mutations              | Server Actions (REST only where needed, e.g. image upload/serving)                                                                                     | Decided                    |
+| Validation             | Zod at every boundary                                                                                                                                  | Decided                    |
+| Image storage          | Storage adapter, metadata in DB                                                                                                                        | Proposed                   |
+| Vault                  | Client-side encryption (Web Crypto)                                                                                                                    | Proposed                   |
+| Tests                  | Vitest (unit, integration against a real test database), Playwright (few end-to-end flows, added with the first UI flows); test files next to the code | Decided                    |
+| UI language            | English                                                                                                                                                | Decided                    |
 
 Only items marked "Decided" are confirmed. Everything else is a proposal and is discussed one by one before implementation.
 
@@ -26,13 +26,14 @@ Only items marked "Decided" are confirmed. Everything else is a proposal and is 
 
 One codebase, three ways to run it. All differences are configured through environment variables.
 
-| Mode | Where | Purpose | Data |
-|---|---|---|---|
-| Development | `npm run dev` + PostgreSQL in Docker | building and presenting locally | seed / demo data |
-| Private | Docker Compose (app + PostgreSQL) on the owner's computer | real daily use | real data, persisted in Docker volumes |
-| Public demo | Cloud (hosted Next.js + hosted PostgreSQL + object storage) | live link for applications | demo data only |
+| Mode        | Where                                                       | Purpose                         | Data                                   |
+| ----------- | ----------------------------------------------------------- | ------------------------------- | -------------------------------------- |
+| Development | `npm run dev` + PostgreSQL in Docker                        | building and presenting locally | seed / demo data                       |
+| Private     | Docker Compose (app + PostgreSQL) on the owner's computer   | real daily use                  | real data, persisted in Docker volumes |
+| Public demo | Cloud (hosted Next.js + hosted PostgreSQL + object storage) | live link for applications      | demo data only                         |
 
 Consequences:
+
 - PostgreSQL everywhere; SQLite is not used because serverless hosting has no persistent file system.
 - Image storage goes through a storage adapter: local volume (development, private) or object storage (public demo).
 - The app ships a `Dockerfile` and `docker-compose.yml` for the private mode.
@@ -79,6 +80,7 @@ docs/
 ```
 
 Rules:
+
 - Feature modules never import from each other; shared code goes into `lib/` or `components/`.
 - Pages in `app/` only compose feature components and queries.
 

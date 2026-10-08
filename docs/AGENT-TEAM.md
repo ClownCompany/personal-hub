@@ -33,7 +33,7 @@ Orchestration (an agent delegating to the others as subagents) is deliberately n
 
 - **Single role per agent.** A focused agent follows its instructions better than a generalist.
 - **Least privilege.** The reviewer cannot edit files; the product owner and architect cannot touch code; the tester cannot change production code. Restrictions are enforced by the tool list, not only by instructions.
-- **Humans decide.** Agents present options and ask before architecture decisions, commits and pushes.
+- **Humans decide.** Agents present options and ask before architecture decisions, commits and pushes. Which agents take part in a task is also the owner's decision: the chain is proposed and confirmed, never shortened or extended silently.
 - **State lives in the repository.** `AGENTS.md`, `docs/ARCHITECTURE.md` and `docs/ROADMAP.md` carry rules, decisions and progress, so every new chat can continue with `/continue`.
 - **Fast feedback.** `npm run check` (lint, typecheck, tests) is the objective gate for every change.
 

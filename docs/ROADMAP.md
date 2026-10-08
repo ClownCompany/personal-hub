@@ -32,6 +32,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 Newest first.
 
+- 2026-10-08: Documented that the agent chain per task is proposed and confirmed by the owner
 - 2026-10-08: Added CI with GitHub Actions (`check` and `build` on Node 24 LTS) and made `typecheck` run `next typegen` first
 - 2026-10-08: Made the `/continue` prompt agent-aware and confirmation-first; added CI to the roadmap
 - 2026-10-08: Added the agent team (5 custom agents with handoffs) and `docs/AGENT-TEAM.md`

@@ -24,6 +24,7 @@ Personal Hub: a web app where a signed-in user manages notes, a weekly planner, 
 ## Workflow
 
 - Always ask before making architecture or design decisions, and before implementing anything marked "Proposed" or "Open" in `docs/ARCHITECTURE.md`.
+- For each task, propose which agents of the team (`.github/agents/`) should be involved and in what order, and wait for confirmation. Never skip or add agents on your own.
 - Always ask before committing. Never push without explicit confirmation.
 - Commit messages use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).
 - Work in small steps; briefly state the plan before larger changes.

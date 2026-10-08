@@ -184,6 +184,7 @@ Every table carries `userId` and is always queried by it.
 - Authorisation is enforced on the server, never only in the UI.
 - Uploads: validate type and size, never trust client file names.
 - Secrets live in `.env`, never in the repository.
+- Dependency audit: Decided. CI has no `npm audit` step. The `braces` advisory (CVE-2026-93687, no patched version yet) reaches us only through the dev dependency chain `eslint-config-next` → `fast-glob` → `micromatch`; `npm audit --omit=dev` reports 0. It is accepted until `braces` is patched; Dependabot reports updates. Do not use `npm audit fix --force`, which would downgrade `eslint-config-next` to 14.
 
 ## Open decisions
 

@@ -37,10 +37,15 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 - Vault key derivation (PBKDF2 vs Argon2)
 - Agent team: orchestration with subagents instead of manual handoffs (deferred, maybe later)
 
+## Known risks
+
+- `npm audit` reports 5 high findings, all from one dev-only chain (`eslint-config-next` → `braces`, CVE-2026-93687, no patch available). Accepted; revisit when `braces` is patched. See "Security principles" in `docs/ARCHITECTURE.md`.
+
 ## Recent activity
 
 Newest first.
 
+- 2026-10-08: Accepted the dev-only `braces` advisory (no patch available) and decided against a CI audit step
 - 2026-10-08: Added the lazy `pg` pool (`src/lib/db.ts`) and `node-pg-migrate` setup with `db:migrate*` scripts (step 2b)
 - 2026-10-08: Added local PostgreSQL via `docker-compose.dev.yml` with `db:up`/`db:down` scripts and `.env.example` variables (step 2a)
 - 2026-10-08: Recorded the database foundation decisions (test DB, isolation, Compose, migrations, CI) in `docs/ARCHITECTURE.md` and split roadmap step 2 into 2a/2b/2c

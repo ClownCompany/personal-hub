@@ -8,6 +8,52 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Overview
+
+Personal Hub: a web app where a signed-in user manages notes, a weekly planner, images and a password vault behind one navigation menu. Built with Next.js, React and TypeScript as a portfolio project. It runs locally, self-hosted via Docker, and as a public demo.
+
+## Commands
+
+- `npm run dev`: start the dev server
+- `npm run lint`: ESLint
+- `npm run build`: production build
+
+Add `typecheck` and `test` here once they exist.
+
+## Workflow
+
+- Always ask before making architecture or design decisions, and before implementing anything marked "Proposed" or "Open" in `docs/ARCHITECTURE.md`.
+- Always ask before committing. Never push without explicit confirmation.
+- Commit messages use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).
+- Work in small steps; briefly state the plan before larger changes.
+- Chat with the user in German. Code, comments, docs, commit messages and UI text are in English.
+
+## Conventions
+
+- TypeScript strict; no `any` without a reason.
+- Feature code lives in `src/features/<module>`; modules do not import from each other. Shared code goes into `src/lib` or `src/components`.
+- Pages in `src/app` stay thin and only compose feature code.
+- Validate all external input with Zod (forms, Server Actions, database rows).
+- Database access uses plain SQL via `pg`; no ORM. Migrations with `node-pg-migrate`.
+
+## Security rules
+
+- Every query and Server Action checks the session and filters by `user_id`.
+- Use parameterised SQL only; never build queries from strings.
+- Never log or return password hashes, session tokens or vault data.
+- No secrets in code or in the repository; use `.env` and keep `.env.example` current.
+
+## Testing
+
+- Everything that gets implemented comes with tests (Vitest for logic, Playwright for core user flows).
+- Write or update tests in the same change as the code, not afterwards.
+
+## Definition of done
+
+- `npm run lint` passes (plus `typecheck` once available).
+- Tests exist for the new or changed code and all tests pass (`test` once available).
+- `docs/ROADMAP.md` and, if decisions changed, `docs/ARCHITECTURE.md` are updated.
+
 ## Project context
 
 Read these before starting work:
@@ -19,5 +65,4 @@ Read these before starting work:
 
 - Keep `docs/ROADMAP.md` up to date with every change: move finished items to "Done", adjust "Next" and "Open decisions".
 - With every commit, add a one-line entry (date and what was worked on) at the top of "Recent activity" in `docs/ROADMAP.md`, included in that same commit.
-- Keep at most the 5 most recent entries in "Recent activity"; delete older ones.
 - Record new decisions in `docs/ARCHITECTURE.md` as well.

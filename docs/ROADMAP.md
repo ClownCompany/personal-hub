@@ -6,6 +6,7 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 - Next.js 16, React 19, TypeScript, Tailwind scaffold
 - Architecture document with decisions (stack, deployment modes, navigation, data model draft)
+- README, `/continue` prompt and agent rules in `AGENTS.md` (workflow, conventions, security, testing)
 
 ## Next
 
@@ -25,8 +26,9 @@ Living status document. Decisions and structure are in [ARCHITECTURE.md](ARCHITE
 
 ## Recent activity
 
-Newest first, maximum 5 entries.
+Newest first.
 
+- 2026-10-08: Defined agent workflow, conventions, security and testing rules in `AGENTS.md`; removed the entry limit for this list
 - 2026-10-07: Added README, ROADMAP, agent rules and the `/continue` prompt for continuing work across chat sessions
 - 2026-10-07: Re-authored commits with the private email and force-pushed
 - 2026-10-07: Added `docs/ARCHITECTURE.md`

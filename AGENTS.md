@@ -17,8 +17,9 @@ Personal Hub: a web app where a signed-in user manages notes, a weekly planner, 
 - `npm run dev`: start the dev server
 - `npm run lint`: ESLint
 - `npm run build`: production build
-
-Add `typecheck` and `test` here once they exist.
+- `npm run typecheck`: TypeScript check
+- `npm test`: run all tests once (`npm run test:watch` for watch mode)
+- `npm run check`: lint, typecheck and tests in one go
 
 ## Workflow
 
@@ -46,12 +47,14 @@ Add `typecheck` and `test` here once they exist.
 ## Testing
 
 - Everything that gets implemented comes with tests (Vitest for logic, Playwright for core user flows).
+- Test files live next to the code as `*.test.ts`.
+- Database code is tested with integration tests against a real test database, not mocks.
 - Write or update tests in the same change as the code, not afterwards.
 
 ## Definition of done
 
-- `npm run lint` passes (plus `typecheck` once available).
-- Tests exist for the new or changed code and all tests pass (`test` once available).
+- `npm run check` passes (lint, typecheck, tests).
+- Tests exist for the new or changed code.
 - `docs/ROADMAP.md` and, if decisions changed, `docs/ARCHITECTURE.md` are updated.
 
 ## Project context

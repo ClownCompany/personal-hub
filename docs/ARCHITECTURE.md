@@ -17,7 +17,7 @@ Each feature (notes, planner, images, vault) is an isolated module behind a shar
 | Validation | Zod at every boundary | Decided |
 | Image storage | Storage adapter, metadata in DB | Proposed |
 | Vault | Client-side encryption (Web Crypto) | Proposed |
-| Tests | Vitest (unit), Playwright (few end-to-end flows) | Decided |
+| Tests | Vitest (unit, integration against a real test database), Playwright (few end-to-end flows, added with the first UI flows); test files next to the code | Decided |
 | UI language | English | Decided |
 
 Only items marked "Decided" are confirmed. Everything else is a proposal and is discussed one by one before implementation.

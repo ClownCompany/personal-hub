@@ -4,11 +4,11 @@ import { MESSAGES } from "./db-migrate-guard.mjs";
 
 const SECRET = "s3cr3t-pa55";
 
-// Mirrors `npm run db:migrate:down`; an existing DATABASE_URL wins over .env.
+// DATABASE_URL comes from the test's env, so no `--env-file-if-exists` here: without a .env file Node prints a notice to stderr that would break the exact-output assertions.
 function runDown(databaseUrl: string, ...args: string[]) {
   const result = spawnSync(
     process.execPath,
-    ["--env-file-if-exists=.env", "scripts/db-migrate-down.mjs", ...args],
+    ["scripts/db-migrate-down.mjs", ...args],
     {
       encoding: "utf8",
       env: { ...process.env, DATABASE_URL: databaseUrl },
@@ -70,7 +70,7 @@ describe("scripts/db-migrate-down.mjs: refusals", () => {
   it("refuses when DATABASE_URL is not set at all", () => {
     const env = { ...process.env };
     delete env.DATABASE_URL;
-    // No --env-file flag: a developer's .env must not supply a URL here.
+    // A developer's .env must not supply a URL here either.
     const result = spawnSync(
       process.execPath,
       ["scripts/db-migrate-down.mjs"],
